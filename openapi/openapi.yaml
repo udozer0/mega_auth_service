@@ -1,0 +1,23 @@
+
+openapi: 3.0.3
+info: { title: Mega Auth Service, version: 0.3.0, description: Auth skeleton }
+servers: [ { url: / } ]
+paths:
+  /health:
+    get:
+      summary: Healthcheck
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { status: { type: string } }
+  /auth/register: { post: { summary: Register, responses: { '200': { description: OK } } } }
+  /auth/login:    { post: { summary: Login,    responses: { '200': { description: OK } } } }
+  /auth/device-login: { post: { summary: Device login, responses: { '200': { description: OK } } } }
+  /auth/forgot:   { post: { summary: Forgot,   responses: { '200': { description: OK } } } }
+  /auth/reset:    { post: { summary: Reset,    responses: { '200': { description: OK } } } }
+  /auth/change-password: { post: { summary: Change password, responses: { '200': { description: OK } } } }
+  /auth/logout:   { post: { summary: Logout,   responses: { '200': { description: OK } } } }
