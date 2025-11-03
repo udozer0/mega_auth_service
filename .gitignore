@@ -1,0 +1,8 @@
+# build artifacts
+/build/
+
+# IDE
+.vscode/
+.idea/
+.vs/
+
