@@ -1,0 +1,45 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    container_name: pm_pg
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pm}
+      POSTGRES_DB: ${POSTGRES_DB:-pm}
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pm} -d ${POSTGRES_DB:-pm}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  auth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mega_auth
+    environment:
+      PM_CONNSTR: "host=db port=5432 dbname=${POSTGRES_DB:-pm} user=${POSTGRES_USER:-pm} password=${POSTGRES_PASSWORD:-pm}"
+      READ_TIMEOUT_MS: "500"
+      IDLE_TIMEOUT_S: "5"
+      MAX_REQS: "50"
+      MAX_BODY: "65536"
+      MAX_HDR: "16384"
+      PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${AUTH_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:

@@ -1,0 +1,16 @@
+# генерилка и мусор
+build/
+bin/
+obj/
+*.o
+*.a
+*.so
+CMakeCache.txt
+CMakeFiles/
+cmake-build-*/
+.vscode/
+.idea/
+.git/
+.gitignore
+*.swp
+.DS_Store

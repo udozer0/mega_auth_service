@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
+find_package(nlohmann_json REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 
 # pkg-config для libpqxx и libsodium
@@ -63,7 +64,9 @@ target_link_libraries(mega_auth
   ${PQXX_LIBRARIES}
   ${SODIUM_LIBRARIES}
   Threads::Threads
+  nlohmann_json::nlohmann_json
 )
+
 
 # 4) Копирование OpenAPI после конфигурации таргета
 add_custom_target(copy_openapi ALL
