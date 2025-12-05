@@ -1,0 +1,55 @@
+{
+  "id": null,
+  "uid": "authservice-cpp",
+  "title": "AuthService (C++) Monitoring",
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "version": 1,
+  "tags": ["auth","cpp","statsd","monitoring"],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Total Requests (1m)",
+      "gridPos": {"x":0,"y":0,"w":6,"h":6},
+      "datasource": {"type":"influxdb","uid":"grafana-auto"},
+      "targets": [
+        { "refId":"A",
+          "query":"from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -1m) |> filter(fn: (r) => r._measurement == \"auth_requests_total\") |> sum()"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests per Second by Route",
+      "gridPos": {"x":6,"y":0,"w":18,"h":6},
+      "datasource": {"type":"influxdb","uid":"grafana-auto"},
+      "targets": [
+        { "refId":"A",
+          "query":"from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -15m) |> filter(fn: (r) => r._measurement == \"auth_requests_total\") |> derivative(unit: 1s, nonNegative: true) |> aggregateWindow(every: 10s, fn: mean)"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Error Rate (4xx/5xx per sec)",
+      "gridPos": {"x":0,"y":6,"w":12,"h":6},
+      "datasource": {"type":"influxdb","uid":"grafana-auto"},
+      "targets": [
+        { "refId":"A",
+          "query":"from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -15m) |> filter(fn: (r) => r._measurement == \"auth_requests_total\" and (r.status =~ /^4.*/ or r.status =~ /^5.*/)) |> derivative(unit: 1s, nonNegative: true) |> aggregateWindow(every: 30s, fn: sum)"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Payload Size (bytes) — placeholder",
+      "gridPos": {"x":12,"y":6,"w":12,"h":6},
+      "datasource": {"type":"influxdb","uid":"grafana-auto"},
+      "targets": [
+        { "refId":"A",
+          "query":"from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -15m) |> filter(fn: (r) => r._measurement == \"auth_payload_size\")"
+        }
+      ]
+    }
+  ]
+}

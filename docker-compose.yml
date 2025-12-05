@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   db:
     image: postgres:16
@@ -10,7 +9,7 @@ services:
     ports:
       - "${PG_PORT:-5432}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./data/pg:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pm} -d ${POSTGRES_DB:-pm}"]
       interval: 3s
@@ -30,6 +29,9 @@ services:
       MAX_BODY: "65536"
       MAX_HDR: "16384"
       PORT: "8080"
+      # метрики в telegraf
+      STATSD_HOST: telegraf
+      STATSD_PORT: "8125"
     depends_on:
       db:
         condition: service_healthy
@@ -40,6 +42,56 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    labels:
+      - "monitoring=enabled"
 
-volumes:
-  pgdata:
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_USER:-admin}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_PASSWORD:-admin123}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUX_ORG:-auth-org}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUX_BUCKET:-auth-bucket}
+      DOCKER_INFLUXDB_INIT_RETENTION: 30d
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN:-supersecrettoken}
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./data/influxdb:/var/lib/influxdb2
+
+  telegraf:
+    image: telegraf:1.32
+    container_name: telegraf
+    # user: root            # раскомментируй, если захочешь включить inputs.docker
+    depends_on:
+      influxdb:
+        condition: service_started
+    environment:
+      INFLUX_TOKEN: ${INFLUX_TOKEN:-supersecrettoken}
+      INFLUX_ORG: ${INFLUX_ORG:-auth-org}
+      INFLUX_BUCKET: ${INFLUX_BUCKET:-auth-bucket}
+    ports:
+      - "8125:8125/udp"
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      # - /var/run/docker.sock:/var/run/docker.sock:ro   # если захочешь метрики докера
+
+  grafana:
+    image: grafana/grafana:10.4.5
+    container_name: grafana
+    user: "472"   # чтобы точно писать в /var/lib/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+      INFLUX_TOKEN: ${INFLUX_TOKEN:-supersecrettoken}
+      INFLUX_ORG: ${INFLUX_ORG:-auth-org}
+      INFLUX_BUCKET: ${INFLUX_BUCKET:-auth-bucket}
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
